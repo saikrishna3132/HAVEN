@@ -1,0 +1,6 @@
+{
+  "name": "HavenPulse - Civic Defense Mesh",
+  "description": "Real-time solarpunk safe haven locator, community resilience grid, and tactical civilian sanctuary network.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
