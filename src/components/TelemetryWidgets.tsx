@@ -5,17 +5,21 @@ interface TelemetryWidgetsProps {
   onOpenRadio: () => void;
   onOpenBuddyFinder: () => void;
   onOpenSolarModal: () => void;
+  onOpenEarthquakeScannerSettings?: () => void;
+  isEarthquakeScannerActive?: boolean;
 }
 
 export const TelemetryWidgets: React.FC<TelemetryWidgetsProps> = ({
   onOpenRadio,
   onOpenBuddyFinder,
-  onOpenSolarModal
+  onOpenSolarModal,
+  onOpenEarthquakeScannerSettings,
+  isEarthquakeScannerActive = false
 }) => {
   return (
     <section className="bg-[#020512] py-14 px-4 md:px-8 border-y border-blue-950 text-slate-100" id="resources-section">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center max-w-2xl mx-auto mb-10">
+        <div className="text-center max-w-2xl mx-auto mb-8">
           <span className="font-mono text-xs text-blue-400 font-semibold uppercase tracking-wider">
             CIVIC SENSORS & REAL-TIME TELEMETRY
           </span>
@@ -24,6 +28,56 @@ export const TelemetryWidgets: React.FC<TelemetryWidgetsProps> = ({
           </h2>
           <p className="text-xs text-slate-400 mt-1">Real-time localized environmental diagnostics across India safe zones</p>
         </div>
+
+        {/* Earthquake Scanner Premier Telemetry Banner */}
+        {onOpenEarthquakeScannerSettings && (
+          <div
+            onClick={() => {
+              playTactileClick();
+              onOpenEarthquakeScannerSettings();
+            }}
+            className={`mb-8 p-4 rounded-2xl border transition-all cursor-pointer flex flex-wrap items-center justify-between gap-3 shadow-xl ${
+              isEarthquakeScannerActive
+                ? 'bg-gradient-to-r from-red-950/60 via-[#0a0518] to-emerald-950/60 border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.25)]'
+                : 'bg-[#050b1e] border-blue-900/60 hover:border-red-500'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className={`w-10 h-10 rounded-2xl flex items-center justify-center border ${
+                isEarthquakeScannerActive ? 'bg-red-950 border-red-500 text-red-400 animate-pulse' : 'bg-[#081128] border-blue-800 text-blue-400'
+              }`}>
+                <span className="material-symbols-outlined text-[24px]">earthquake</span>
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+                    EARTHQUAKE STRUCTURAL SCANNER
+                  </span>
+                  <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full border font-bold uppercase ${
+                    isEarthquakeScannerActive ? 'bg-red-950 text-red-300 border-red-500' : 'bg-slate-900 text-slate-400 border-slate-700'
+                  }`}>
+                    {isEarthquakeScannerActive ? 'SCANNER LIVE' : 'CLICK TO CONFIGURE'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 font-mono mt-0.5">
+                  <strong className="text-red-400">RED AREA:</strong> Weak & big buildings with high collapse chance (Uninhabitable) • <strong className="text-emerald-400">GREEN AREA:</strong> Certified safe buildings where people can reside.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                playTactileClick();
+                onOpenEarthquakeScannerSettings();
+              }}
+              className="px-4 py-2 bg-[#120306] border border-red-800 hover:border-red-500 text-red-200 rounded-xl font-mono text-xs font-bold flex items-center gap-1.5 shadow-md"
+            >
+              <span className="material-symbols-outlined text-[16px] text-red-400">tune</span>
+              <span>Scanner Settings →</span>
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Widget 1: Air & Water Purity Index */}

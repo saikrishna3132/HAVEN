@@ -21,6 +21,11 @@ export interface Haven {
   petFriendly: boolean;
   wheelchairReady: boolean;
   filteredWater: boolean;
+  childFriendly?: boolean;
+  pediatricCare?: boolean;
+  familyRooms?: boolean;
+  babySupplies?: boolean;
+  childSafetyTags?: string[];
   radioChannel: string;
   phone: string;
   lat: number;
@@ -186,6 +191,11 @@ export const JAIPUR_HAVENS_DATA: Haven[] = [
     petFriendly: true,
     wheelchairReady: true,
     filteredWater: true,
+    childFriendly: true,
+    pediatricCare: false,
+    familyRooms: true,
+    babySupplies: true,
+    childSafetyTags: ['Dedicated Family Dorms', 'Baby Food & Warm Milk Stations', 'Fenced Safe Grass Lawn', 'Child Wristband Security'],
     radioChannel: 'CH 04 (142.400 MHz • ParkNet)',
     phone: 'Desk: 0141-2385-SAFE',
     lat: 26.9067,
@@ -214,6 +224,11 @@ export const JAIPUR_HAVENS_DATA: Haven[] = [
     petFriendly: false,
     wheelchairReady: true,
     filteredWater: true,
+    childFriendly: true,
+    pediatricCare: true,
+    familyRooms: true,
+    babySupplies: true,
+    childSafetyTags: ['24/7 Pediatric Trauma Ward', 'Neonatal Care Incubators', 'Pediatric Paracetamol & ORS', 'Child Doctor On Duty'],
     radioChannel: 'CH 08 (142.080 MHz • SMS-MED)',
     phone: 'Emergency: 108 / 0141-2518-108',
     lat: 26.8929,
@@ -242,6 +257,11 @@ export const JAIPUR_HAVENS_DATA: Haven[] = [
     petFriendly: false,
     wheelchairReady: true,
     filteredWater: true,
+    childFriendly: true,
+    pediatricCare: true,
+    familyRooms: true,
+    babySupplies: true,
+    childSafetyTags: ['Specialized Pediatric Wing', 'Emergency Infant Rehydration', 'Pediatrician Available'],
     radioChannel: 'CH 10 (142.100 MHz • SDMH-MED)',
     phone: 'Emergency: 0141-2566-251',
     lat: 26.8902,
@@ -487,6 +507,11 @@ export const JAIPUR_HAVENS_DATA: Haven[] = [
     petFriendly: true,
     wheelchairReady: true,
     filteredWater: true,
+    childFriendly: true,
+    pediatricCare: false,
+    familyRooms: true,
+    babySupplies: true,
+    childSafetyTags: ['Private Family Quarantine Rooms', 'Toddler Nutritional Langar', 'Child Lost & Found Desk'],
     radioChannel: 'CH 07 (142.700 MHz • Mansarovar)',
     phone: 'Colony Desk: 0141-2390-SAFE',
     lat: 26.8580,
@@ -516,6 +541,11 @@ export const JAIPUR_HAVENS_DATA: Haven[] = [
     petFriendly: true,
     wheelchairReady: true,
     filteredWater: true,
+    childFriendly: true,
+    pediatricCare: false,
+    familyRooms: true,
+    babySupplies: false,
+    childSafetyTags: ['Reinforced Subterranean Family Bunk Section'],
     radioChannel: 'CH 05 (142.500 MHz • TechHub)',
     phone: 'Vault: 0141-2720-BUNK',
     lat: 26.8532,
@@ -545,6 +575,11 @@ export const JAIPUR_HAVENS_DATA: Haven[] = [
     petFriendly: true,
     wheelchairReady: true,
     filteredWater: true,
+    childFriendly: true,
+    pediatricCare: false,
+    familyRooms: true,
+    babySupplies: true,
+    childSafetyTags: ['Family Sleeping Pods', 'Baby Diapers & Wipes', 'Nursery Play Corner'],
     radioChannel: 'CH 15 (142.850 MHz • West-Safe)',
     phone: 'Relief Desk: 0141-2351-HELP',
     lat: 26.9080,
@@ -718,6 +753,16 @@ export function generateNearbyFacilitiesForLocation(
       petFriendly: true,
       wheelchairReady: true,
       filteredWater: true,
+      childFriendly: tmpl.category === 'hospital' || tmpl.category === 'safehouse' || tmpl.category === 'bunker',
+      pediatricCare: tmpl.category === 'hospital',
+      familyRooms: tmpl.category === 'safehouse' || tmpl.category === 'bunker',
+      babySupplies: tmpl.category === 'hospital' || tmpl.category === 'safehouse' || tmpl.category === 'water',
+      childSafetyTags:
+        tmpl.category === 'hospital'
+          ? ['Pediatric Emergency Triage', 'Infant Care Pod']
+          : tmpl.category === 'safehouse'
+          ? ['Family Sleeping Quarters', 'Baby Food Pantry']
+          : ['Child Safe Assembly'],
       radioChannel: tmpl.radio,
       phone: tmpl.phone,
       lat,

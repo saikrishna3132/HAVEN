@@ -6,13 +6,15 @@ interface TopAlertBarProps {
   onToggleSos: () => void;
   locationName?: string;
   coords?: { lat: number; lng: number } | null;
+  onOpenSosConsole?: () => void;
 }
 
 export const TopAlertBar: React.FC<TopAlertBarProps> = ({
   isSosActive,
   onToggleSos,
   locationName = 'Jaipur',
-  coords = { lat: 26.9124, lng: 75.7873 }
+  coords = { lat: 26.9124, lng: 75.7873 },
+  onOpenSosConsole
 }) => {
   const [pingNode, setPingNode] = useState(4);
   const [pingMs, setPingMs] = useState(12);
@@ -32,6 +34,9 @@ export const TopAlertBar: React.FC<TopAlertBarProps> = ({
     playTactileClick();
     if (!isSosActive) {
       startSOSBeaconTone();
+      if (onOpenSosConsole) {
+        onOpenSosConsole();
+      }
     } else {
       stopSOSBeaconTone();
     }
@@ -42,17 +47,30 @@ export const TopAlertBar: React.FC<TopAlertBarProps> = ({
     <>
       {/* Flashing Banner if SOS active - High-Alert Laser Crimson */}
       {isSosActive && (
-        <div className="bg-red-950/95 text-red-100 border-b-2 border-red-600 px-4 py-2.5 text-center font-mono text-xs font-bold tracking-wider animate-pulse flex items-center justify-center gap-3 z-50 shadow-[0_0_25px_rgba(239,68,68,0.5)]">
+        <div className="bg-red-950/95 text-red-100 border-b-2 border-red-600 px-4 py-2 text-center font-mono text-xs font-bold tracking-wider animate-pulse flex flex-wrap items-center justify-center gap-2.5 z-50 shadow-[0_0_25px_rgba(239,68,68,0.5)]">
           <span className="material-symbols-outlined text-[20px] text-red-400">warning</span>
           <span>
             SOS DISTRESS ACTIVE • COORDINATES: {latStr}°N, {lngStr}°E ({cleanLocation.toUpperCase()}) • FREQUENCY: 142.800 MHz • ENCRYPTED UPLINK
           </span>
-          <button
-            onClick={handleSosClick}
-            className="bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded-lg text-xs font-mono font-bold ml-2 shadow-md shadow-black"
-          >
-            Cancel Broadcast
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenSosConsole && (
+              <button
+                onClick={() => {
+                  playTactileClick();
+                  onOpenSosConsole();
+                }}
+                className="bg-black hover:bg-slate-900 border border-red-400 text-white px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold shadow-md"
+              >
+                Open SOS Console
+              </button>
+            )}
+            <button
+              onClick={handleSosClick}
+              className="bg-red-600 hover:bg-red-500 text-white px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold shadow-md"
+            >
+              Cancel Broadcast
+            </button>
+          </div>
         </div>
       )}
 

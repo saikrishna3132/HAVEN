@@ -6,12 +6,14 @@ interface ReservationModalProps {
   isOpen: boolean;
   onClose: () => void;
   haven: Haven | null;
+  onReservationConfirmed?: (havenId: string, reservedBeds: number) => void;
 }
 
 export const ReservationModal: React.FC<ReservationModalProps> = ({
   isOpen,
   onClose,
-  haven
+  haven,
+  onReservationConfirmed
 }) => {
   const [civilianName, setCivilianName] = useState('');
   const [adults, setAdults] = useState(1);
@@ -19,6 +21,7 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
   const [pets, setPets] = useState(0);
   const [needs, setNeeds] = useState('');
   const [confirmedCode, setConfirmedCode] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   if (!isOpen || !haven) return null;
 
@@ -27,6 +30,46 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
     playTactileClick();
     const code = `IN-${haven.id.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
     setConfirmedCode(code);
+    if (onReservationConfirmed) {
+      onReservationConfirmed(haven.id, adults + children);
+    }
+  };
+
+  const handleDownloadPass = () => {
+    if (!confirmedCode) return;
+    playTactileClick();
+    const passText = `================================================
+HAVENPULSE CIVIC DEFENSE - SANCTUARY ENTRY PASS
+================================================
+Pass ID: ${confirmedCode}
+Sanctuary: ${haven.name}
+Sector: ${haven.sector}
+Address: ${haven.address}
+Registrant: ${civilianName || 'Civilian Primary'}
+Party Size: ${adults} Adults, ${children} Children, ${pets} Pets
+Radio Frequency: ${haven.radioChannel}
+Emergency Contact: ${haven.phone}
+Holding Window: 45 Minutes from issue
+Timestamp: ${new Date().toLocaleString()}
+================================================
+Present this token at intake gate for biometric bedding verification.
+================================================`;
+
+    const blob = new Blob([passText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Entry-Pass-${confirmedCode}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopyCode = () => {
+    if (!confirmedCode) return;
+    playTactileClick();
+    navigator.clipboard.writeText(confirmedCode);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 3000);
   };
 
   const handleReset = () => {
@@ -89,6 +132,25 @@ export const ReservationModal: React.FC<ReservationModalProps> = ({
                 <span className="text-slate-500">Holding Window:</span>
                 <span className="text-red-400 font-bold">45 Minutes</span>
               </div>
+            </div>
+
+            <div className="flex gap-2 max-w-xs mx-auto">
+              <button
+                onClick={handleCopyCode}
+                className="flex-1 py-2 bg-[#09122c] border border-blue-700 hover:border-blue-500 text-blue-300 rounded-xl font-mono text-xs font-bold flex items-center justify-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {copiedCode ? 'check' : 'content_copy'}
+                </span>
+                {copiedCode ? 'Copied' : 'Copy Token'}
+              </button>
+              <button
+                onClick={handleDownloadPass}
+                className="flex-1 py-2 bg-[#09122c] border border-blue-700 hover:border-blue-500 text-cyan-300 rounded-xl font-mono text-xs font-bold flex items-center justify-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[15px]">file_download</span>
+                Save Pass
+              </button>
             </div>
 
             <button

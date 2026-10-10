@@ -130,3 +130,48 @@ export function stopSOSBeaconTone() {
     sosInterval = null;
   }
 }
+
+// Plays a low-frequency seismic earth rumble tone
+export function playSeismicRumble(durationSeconds = 3) {
+  try {
+    const ctx = getAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(45, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + durationSeconds);
+
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationSeconds);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + durationSeconds);
+  } catch {
+    // Audio blocked
+  }
+}
+
+// Plays a sharp seismic hazard alert chime
+export function playSeismicAlarmTone() {
+  try {
+    const ctx = getAudioContext();
+    [660, 520, 660, 520].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.12);
+
+      gain.gain.setValueAtTime(0.06, ctx.currentTime + idx * 0.12);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.12 + 0.1);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.12);
+      osc.stop(ctx.currentTime + idx * 0.12 + 0.1);
+    });
+  } catch {
+    // Audio blocked
+  }
+}

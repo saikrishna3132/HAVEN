@@ -31,6 +31,17 @@ import { SolarGridModal } from './components/modals/SolarGridModal';
 import { ProfileModal } from './components/modals/ProfileModal';
 import { SurvivalGuidesModal } from './components/modals/SurvivalGuidesModal';
 import { VolunteerPatrolModal } from './components/modals/VolunteerPatrolModal';
+import { OfflineDossierModal } from './components/modals/OfflineDossierModal';
+import { SosDistressModal } from './components/modals/SosDistressModal';
+import { SeismicInspectorModal } from './components/modals/SeismicInspectorModal';
+import { EarthquakeScannerSettingsModal } from './components/modals/EarthquakeScannerSettingsModal';
+import { FamilyChildSafetyModal } from './components/modals/FamilyChildSafetyModal';
+import {
+  SeismicZone,
+  JAIPUR_SEISMIC_ZONES,
+  generateSeismicZonesForLocation,
+  recalculateSeismicDistances
+} from './data/earthquakeScanData';
 import { playTactileClick } from './utils/audioSynth';
 
 export default function App() {
@@ -42,6 +53,13 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [radiusKm, setRadiusKm] = useState(15);
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  // Earthquake Scanner State
+  const [isEarthquakeScannerActive, setIsEarthquakeScannerActive] = useState(false);
+  const [seismicZones, setSeismicZones] = useState<SeismicZone[]>(JAIPUR_SEISMIC_ZONES);
+  const [inspectedSeismicZone, setInspectedSeismicZone] = useState<SeismicZone | null>(null);
+  const [earthquakeScannerSettingsOpen, setEarthquakeScannerSettingsOpen] = useState(false);
+  const [isQuakeSimulating, setIsQuakeSimulating] = useState(false);
 
   // User Present Location & Geolocation state
   const [userLocation, setUserLocation] = useState<UserLocationState>({
@@ -70,6 +88,8 @@ export default function App() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [volunteerPatrolOpen, setVolunteerPatrolOpen] = useState(false);
   const [survivalGuideOpen, setSurvivalGuideOpen] = useState<'map' | 'solar' | 'mesh' | null>(null);
+  const [offlineDossierOpen, setOfflineDossierOpen] = useState(false);
+  const [sosDistressModalOpen, setSosDistressModalOpen] = useState(false);
 
   // High contrast mode
   const [isSunlightMode, setIsSunlightMode] = useState(false);
@@ -127,6 +147,7 @@ export default function App() {
         const updatedHavens = recalculateJaipurDistances(lat, lng);
         setHavensList(updatedHavens);
         setSelectedHaven(updatedHavens[0]);
+        setSeismicZones(recalculateSeismicDistances(lat, lng));
         setUserLocation({
           coords: { lat, lng },
           localityName: isRealGps ? 'Jaipur (GPS Locked)' : label,
@@ -147,6 +168,7 @@ export default function App() {
         const generatedHavens = generateNearbyFacilitiesForLocation(lat, lng, localityTag);
         setHavensList(generatedHavens);
         setSelectedHaven(generatedHavens[0]);
+        setSeismicZones(generateSeismicZonesForLocation(lat, lng, localityTag));
         setUserLocation({
           coords: { lat, lng },
           localityName: localityTag,
@@ -254,11 +276,13 @@ export default function App() {
       const updated = recalculateJaipurDistances(city.center.lat, city.center.lng);
       setHavensList(updated);
       setSelectedHaven(updated[0]);
+      setSeismicZones(recalculateSeismicDistances(city.center.lat, city.center.lng));
       showToast(`Map anchored to ${city.name} (${city.state}). Showing verified Jaipur lifelines.`);
     } else {
       const generated = generateNearbyFacilitiesForLocation(city.center.lat, city.center.lng, city.name);
       setHavensList(generated);
       setSelectedHaven(generated[0]);
+      setSeismicZones(generateSeismicZonesForLocation(city.center.lat, city.center.lng, city.name));
       showToast(`Sector uploaded: ${city.name}. Showing nearby emergency facilities.`);
     }
   };
@@ -476,20 +500,43 @@ export default function App() {
   const handleSelectTab = (tab: string) => {
     setActiveTab(tab);
     if (tab === 'radar') {
+      setSelectedCategory('all');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'shelters') {
+      setSelectedCategory('safehouse');
       const el = document.getElementById('shelters-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     } else if (tab === 'medical') {
-      const el = document.getElementById('medical-section');
+      setSelectedCategory('hospital');
+      const el = document.getElementById('shelters-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     } else if (tab === 'resources') {
-      const el = document.getElementById('resources-section');
+      setSelectedCategory('water');
+      const el = document.getElementById('shelters-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     } else if (tab === 'community') {
       const el = document.getElementById('community-section');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleReservationConfirmed = (havenId: string, reservedBeds: number) => {
+    setHavensList((prev) =>
+      prev.map((h) => {
+        if (h.id === havenId && h.openBeds !== undefined) {
+          const newOpen = Math.max(0, h.openBeds - reservedBeds);
+          const total = h.totalBeds || (newOpen + reservedBeds);
+          const newPct = Math.min(100, Math.round(((total - newOpen) / total) * 100));
+          return {
+            ...h,
+            openBeds: newOpen,
+            occupancyPercent: newPct
+          };
+        }
+        return h;
+      })
+    );
+    showToast(`Sanctuary Bed Confirmed! ${reservedBeds} slot(s) reserved.`);
   };
 
   return (
@@ -508,6 +555,7 @@ export default function App() {
         onToggleSos={() => setIsSosActive(!isSosActive)}
         locationName={userLocation.localityName || currentCity.name}
         coords={userLocation.coords || currentCity.center}
+        onOpenSosConsole={() => setSosDistressModalOpen(true)}
       />
 
       {/* 2. TOP NAV BAR */}
@@ -519,6 +567,9 @@ export default function App() {
         onOpenProfileModal={() => setProfileModalOpen(true)}
         onToggleSos={() => setIsSosActive(!isSosActive)}
         isSosActive={isSosActive}
+        onOpenOfflineDossier={() => setOfflineDossierOpen(true)}
+        isEarthquakeScannerActive={isEarthquakeScannerActive}
+        onOpenEarthquakeScannerSettings={() => setEarthquakeScannerSettingsOpen(true)}
       />
 
       {/* 3. HERO BANNER & UNIVERSAL SEARCH WITH GPS LOCATE */}
@@ -628,7 +679,78 @@ export default function App() {
                 <span className="material-symbols-outlined text-[16px] text-blue-400">water_full</span>
                 Filtered Water
               </label>
+
+              {/* Earthquake Scanner Premier Setting */}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTactileClick();
+                    setIsEarthquakeScannerActive((prev) => {
+                      const next = !prev;
+                      showToast(
+                        next
+                          ? '⚡ Earthquake Scanner Active: Red Area (Weak & Tall Hazards) vs Green Area (Safe Residences) enabled.'
+                          : 'Earthquake Scanner Deactivated.'
+                      );
+                      return next;
+                    });
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono cursor-pointer transition-all shadow-md ${
+                    isEarthquakeScannerActive
+                      ? 'bg-red-950 text-red-200 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)] font-bold animate-pulse'
+                      : 'bg-[#050b1e] text-slate-400 border-blue-950 hover:border-red-500 hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px] text-red-400">earthquake</span>
+                  <span>Earthquake Scanner: {isEarthquakeScannerActive ? 'ON' : 'OFF'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    playTactileClick();
+                    setEarthquakeScannerSettingsOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-red-900/80 bg-[#120306] text-red-300 hover:border-red-500 hover:text-white text-xs font-mono font-bold cursor-pointer transition-all shadow-md"
+                  title="Configure Earthquake Scanner sensitivity, magnitude simulation, and structural thresholds"
+                >
+                  <span className="material-symbols-outlined text-[15px] text-red-400">tune</span>
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
+              </div>
             </div>
+
+            {/* Active Earthquake Scanner Explanatory Ribbon */}
+            {isEarthquakeScannerActive && (
+              <div className="mt-3 p-3 bg-gradient-to-r from-red-950/40 via-[#090518] to-emerald-950/40 border border-red-500/70 rounded-2xl flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono shadow-lg">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0"></span>
+                  <div className="leading-snug">
+                    <span className="text-white font-bold block sm:inline sm:mr-2">
+                      EARTHQUAKE SCANNER ACTIVE:
+                    </span>
+                    <span className="text-red-300 font-semibold">
+                      🔴 RED AREA: Very weak & big buildings with high breaking risk (Uninhabitable)
+                    </span>
+                    <span className="text-slate-500 mx-1.5 hidden sm:inline">•</span>
+                    <span className="text-emerald-300 font-semibold block sm:inline">
+                      🟢 GREEN AREA: Certified safe structures where people can reside
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    playTactileClick();
+                    setEarthquakeScannerSettingsOpen(true);
+                  }}
+                  className="px-2.5 py-1 bg-red-950 border border-red-700 hover:border-red-400 text-red-200 rounded-xl text-[11px] font-bold font-mono shrink-0 transition-all shadow-sm"
+                >
+                  Open Scanner Settings →
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Split Layout: Map (left) & Feed (right) */}
@@ -646,6 +768,12 @@ export default function App() {
                 isLocating={isLocating}
                 onUploadCity={handleUploadCity}
                 onCustomLocalitySubmit={handleCustomLocalitySubmit}
+                onOpenOfflineDossier={() => setOfflineDossierOpen(true)}
+                isEarthquakeScannerActive={isEarthquakeScannerActive}
+                onToggleEarthquakeScanner={() => setIsEarthquakeScannerActive(!isEarthquakeScannerActive)}
+                seismicZones={seismicZones}
+                onSelectSeismicZone={(zone) => setInspectedSeismicZone(zone)}
+                onOpenEarthquakeScannerSettings={() => setEarthquakeScannerSettingsOpen(true)}
               />
             </div>
 
@@ -664,6 +792,10 @@ export default function App() {
                 onCallDirect={() => setEmergencyCallOpen(true)}
                 onRequestEscort={() => setBuddyFinderOpen(true)}
                 onJoinMeal={(h) => setReservationModalHaven(h)}
+                isEarthquakeScannerActive={isEarthquakeScannerActive}
+                seismicZones={seismicZones}
+                onSelectSeismicZone={(zone) => setInspectedSeismicZone(zone)}
+                onOpenEarthquakeScannerSettings={() => setEarthquakeScannerSettingsOpen(true)}
               />
             </div>
           </div>
@@ -677,6 +809,8 @@ export default function App() {
           }}
           onOpenBuddyFinder={() => setBuddyFinderOpen(true)}
           onOpenSolarModal={() => setSolarGridOpen(true)}
+          isEarthquakeScannerActive={isEarthquakeScannerActive}
+          onOpenEarthquakeScannerSettings={() => setEarthquakeScannerSettingsOpen(true)}
         />
 
         {/* 6. COOPERATIVE RESILIENCE & COMMUNITY SECTION */}
@@ -707,6 +841,99 @@ export default function App() {
         isOpen={!!reservationModalHaven}
         onClose={() => setReservationModalHaven(null)}
         haven={reservationModalHaven}
+        onReservationConfirmed={handleReservationConfirmed}
+      />
+
+      <OfflineDossierModal
+        isOpen={offlineDossierOpen}
+        onClose={() => setOfflineDossierOpen(false)}
+        havens={havensList}
+        currentCity={currentCity}
+        userLocation={userLocation}
+      />
+
+      <SosDistressModal
+        isOpen={sosDistressModalOpen}
+        onClose={() => setSosDistressModalOpen(false)}
+        isSosActive={isSosActive}
+        onToggleSos={() => setIsSosActive(!isSosActive)}
+        userLocation={userLocation}
+        currentCity={currentCity}
+        nearestHaven={havensList[0]}
+      />
+
+      <EarthquakeScannerSettingsModal
+        isOpen={earthquakeScannerSettingsOpen}
+        onClose={() => setEarthquakeScannerSettingsOpen(false)}
+        isActive={isEarthquakeScannerActive}
+        onToggleActive={() => {
+          setIsEarthquakeScannerActive((prev) => {
+            const next = !prev;
+            showToast(
+              next
+                ? '⚡ Earthquake Scanner Active: Red Area (Weak & Tall Hazards) vs Green Area (Safe Residences) enabled.'
+                : 'Earthquake Scanner Deactivated.'
+            );
+            return next;
+          });
+        }}
+        seismicZones={seismicZones}
+        onSelectZone={(zone) => setInspectedSeismicZone(zone)}
+        onSimulateTremor={() => {
+          setIsQuakeSimulating(true);
+          showToast('⚠️ Simulated 6.5 Richter Earthquake Tremor! Evacuate RED areas immediately.');
+          setTimeout(() => setIsQuakeSimulating(false), 5000);
+        }}
+        isSimulating={isQuakeSimulating}
+      />
+
+      <SeismicInspectorModal
+        isOpen={!!inspectedSeismicZone}
+        onClose={() => setInspectedSeismicZone(null)}
+        zone={inspectedSeismicZone}
+        onRouteToZone={(zone) => {
+          // If user requests to navigate to the zone
+          const matched = havensList.find(
+            (h) => calculateDistanceKm(h.lat, h.lng, zone.lat, zone.lng) < 0.8
+          );
+          if (matched) {
+            setSelectedHaven(matched);
+          } else {
+            const temporaryHaven: Haven = {
+              id: zone.id,
+              name: zone.name,
+              city: currentCity.name,
+              category: zone.type === 'safe_residence' ? 'safehouse' : 'bunker',
+              categoryLabel: zone.type === 'safe_residence' ? 'Safe Residence Ground' : 'Seismic Hazard Perimeter',
+              badgeClass: zone.type === 'safe_residence' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-red-950 text-red-300 border border-red-800',
+              dotClass: zone.type === 'safe_residence' ? 'bg-emerald-400' : 'bg-red-400',
+              lat: zone.lat,
+              lng: zone.lng,
+              mapCoords: zone.mapCoords,
+              address: zone.address,
+              sector: 'Earthquake Scanner Sector',
+              distance: zone.distance || '0.5 km',
+              distanceKm: zone.distanceKm,
+              eta: zone.eta || '6 min',
+              travelMode: 'walk',
+              openBeds: zone.capacity,
+              description: zone.residentsAdvice,
+              radiationSafe: true,
+              petFriendly: true,
+              wheelchairReady: true,
+              filteredWater: true,
+              phone: '112',
+              radioChannel: 'CH 04 (142.400 MHz)',
+              tags: zone.tags
+            };
+            setSelectedHaven(temporaryHaven);
+          }
+          showToast(
+            zone.type === 'safe_residence'
+              ? `Route locked to safe residence: ${zone.name}`
+              : `Bypass route perimeter locked: ${zone.name}`
+          );
+        }}
       />
 
       <RadioModal

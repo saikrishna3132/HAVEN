@@ -9,6 +9,11 @@ interface TopNavBarProps {
   onOpenProfileModal: () => void;
   onToggleSos: () => void;
   isSosActive: boolean;
+  onOpenOfflineDossier?: () => void;
+  isEarthquakeScannerActive?: boolean;
+  onOpenEarthquakeScannerSettings?: () => void;
+  onOpenFamilyShield?: () => void;
+  isFamilyFilterActive?: boolean;
 }
 
 export const TopNavBar: React.FC<TopNavBarProps> = ({
@@ -18,7 +23,12 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
   onOpenSolarModal,
   onOpenProfileModal,
   onToggleSos,
-  isSosActive
+  isSosActive,
+  onOpenOfflineDossier,
+  isEarthquakeScannerActive = false,
+  onOpenEarthquakeScannerSettings,
+  onOpenFamilyShield,
+  isFamilyFilterActive = false
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -89,6 +99,45 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
 
         {/* Trailing Actions */}
         <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Earthquake Scanner Setting Button */}
+          {onOpenEarthquakeScannerSettings && (
+            <button
+              onClick={() => {
+                playTactileClick();
+                onOpenEarthquakeScannerSettings();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all tactile-button shadow-md ${
+                isEarthquakeScannerActive
+                  ? 'bg-red-950 text-red-200 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)] animate-pulse'
+                  : 'bg-[#09122a] text-slate-300 border-blue-900/80 hover:border-red-500 hover:text-white'
+              }`}
+              title="Earthquake Scanner Setting: Red Area (Weak/Big Buildings) vs Green Area (Safe Residences)"
+            >
+              <span className="material-symbols-outlined text-[16px] text-red-400">earthquake</span>
+              <span className="hidden sm:inline">Quake Scanner</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isEarthquakeScannerActive ? 'bg-red-500 animate-ping' : 'bg-slate-500'}`}></span>
+            </button>
+          )}
+
+          {/* Family & Child Protection Shield Button */}
+          {onOpenFamilyShield && (
+            <button
+              onClick={() => {
+                playTactileClick();
+                onOpenFamilyShield();
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-mono font-bold transition-all tactile-button shadow-md cursor-pointer ${
+                isFamilyFilterActive
+                  ? 'bg-emerald-950 text-emerald-200 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
+                  : 'bg-[#09122a] text-slate-300 border-blue-900/80 hover:border-emerald-500 hover:text-white'
+              }`}
+              title="Family Defense Shield: Children registry, Lost Child SOS, Pediatric Havens"
+            >
+              <span className="material-symbols-outlined text-[16px] text-emerald-400">escalator_warning</span>
+              <span className="hidden md:inline">Family Shield</span>
+            </button>
+          )}
+
           {/* Emergency Call Button */}
           <button
             onClick={() => {
@@ -100,6 +149,21 @@ export const TopNavBar: React.FC<TopNavBarProps> = ({
             <span className="material-symbols-outlined text-[15px] text-red-400">call</span>
             <span>Emergency 112</span>
           </button>
+
+          {/* Offline Dossier Go-Bag Icon */}
+          {onOpenOfflineDossier && (
+            <button
+              onClick={() => {
+                playTactileClick();
+                onOpenOfflineDossier();
+              }}
+              aria-label="Offline Sector Dossier"
+              className="w-9 h-9 rounded-xl bg-[#09122a] border border-blue-900/80 flex items-center justify-center text-cyan-400 hover:border-cyan-400 hover:shadow-[0_0_12px_rgba(6,182,212,0.3)] transition-all tactile-button"
+              title="Printable Go-Bag Dossier & Offline Manifest"
+            >
+              <span className="material-symbols-outlined text-[19px]">download_for_offline</span>
+            </button>
+          )}
 
           {/* Solar Telemetry Icon */}
           <button
